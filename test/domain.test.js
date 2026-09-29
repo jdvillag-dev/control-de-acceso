@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { webcrypto } from "node:crypto";
 import { createInitialState, loadState, markAttendance, saveState, serializeCsv, STORAGE_KEY } from "../src/domain.js";
 
 const employee = { id: "A1", name: "Ejemplo", site: "Sede", type: "Intramural", status: "Activo", start: "07:00" };
@@ -28,18 +29,20 @@ test("bloquea personas inactivas y acciones inválidas", () => {
   assert.throws(() => markAttendance(state, "A1", "Otro", fixedDate(7)), /inválido/);
 });
 
-test("restaura estado guardado y vuelve al estado inicial ante datos corruptos", () => {
+test("cifra el estado guardado, lo restaura y descarta datos corruptos", async () => {
   const saved = new Map();
   const storage = {
     getItem: (key) => saved.get(key) ?? null,
     setItem: (key, value) => saved.set(key, value)
   };
   const state = createInitialState();
-  assert.equal(saveState(state, storage), true);
+  const key = await webcrypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  assert.equal(await saveState(state, storage, webcrypto, key), true);
   assert.equal(saved.has(STORAGE_KEY), true);
-  assert.deepEqual(loadState(storage), state);
+  assert.equal(saved.get(STORAGE_KEY).includes("Ana Torres"), false);
+  assert.deepEqual(await loadState(storage, webcrypto, key), state);
   storage.setItem(STORAGE_KEY, "{");
-  assert.equal(loadState(storage).sites.length, 23);
+  assert.equal((await loadState(storage, webcrypto, key)).sites.length, 23);
 });
 
 test("exporta CSV con delimitadores escapados y neutraliza fórmulas de hoja de cálculo", () => {

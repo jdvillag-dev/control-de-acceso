@@ -16,7 +16,7 @@ Abre <http://localhost:8000>. Para probar las reglas de asistencia:
 npm test
 ```
 
-El primer inicio carga 23 sedes y colaboradores ficticios de ejemplo. El estado se guarda en `localStorage`; **no ingreses datos personales reales**. Usa «Restaurar datos de muestra» para borrar la información local. Después de la primera visita, el navegador guarda en caché los archivos de la aplicación para volver a abrirla sin conexión. El escáner QR requiere permiso de cámara y un navegador con `BarcodeDetector`; el contenido del QR debe ser el identificador del colaborador, por ejemplo `E0001`. Si el lector no está disponible, la marcación manual sigue funcionando.
+El primer inicio carga 23 sedes y colaboradores ficticios de ejemplo. El estado se cifra en el dispositivo con AES-GCM y una clave no exportable de Web Crypto en IndexedDB; **no ingreses datos personales reales**, ya que esto no reemplaza la seguridad de un sistema productivo. Usa «Restaurar datos de muestra» para reemplazar la información local. Después de la primera visita, el navegador guarda en caché los archivos de la aplicación para volver a abrirla sin conexión. El escáner QR requiere permiso de cámara y un navegador con `BarcodeDetector`; el contenido del QR debe ser el identificador del colaborador, por ejemplo `E0001`. Si el lector no está disponible, la marcación manual sigue funcionando.
 
 ## Funcionalidad del MVP
 

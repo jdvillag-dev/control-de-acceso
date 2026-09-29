@@ -1,4 +1,6 @@
 export const STORAGE_KEY = "control-de-acceso-state-v1";
+const KEY_DATABASE = "control-de-acceso-keys-v1";
+const KEY_STORE = "keys";
 
 export const SITES = [
   "Sede 01 · Centro", "Sede 02 · Norte", "Sede 03 · Sur", "Sede 04 · Oriente",
@@ -30,11 +32,53 @@ export function createInitialState() {
   return { employees, marks: [], novelties: [], sites: [...SITES] };
 }
 
-export function loadState(storage = globalThis.localStorage) {
+function getEncryptionKey(cryptoApi) {
+  if (!globalThis.indexedDB || !cryptoApi?.subtle) throw new Error("Cifrado local no disponible.");
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(KEY_DATABASE, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(KEY_STORE);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      const read = database.transaction(KEY_STORE, "readonly").objectStore(KEY_STORE).get("state");
+      read.onerror = () => reject(read.error);
+      read.onsuccess = async () => {
+        if (read.result) {
+          database.close();
+          resolve(read.result);
+          return;
+        }
+        try {
+          const key = await cryptoApi.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+          const transaction = database.transaction(KEY_STORE, "readwrite");
+          transaction.objectStore(KEY_STORE).put(key, "state");
+          transaction.oncomplete = () => { database.close(); resolve(key); };
+          transaction.onerror = () => reject(transaction.error);
+        } catch (error) {
+          database.close();
+          reject(error);
+        }
+      };
+    };
+  });
+}
+
+const toBase64 = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
+const fromBase64 = (text) => Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
+
+export async function loadState(storage = globalThis.localStorage, cryptoApi = globalThis.crypto, key) {
   try {
     const saved = storage?.getItem(STORAGE_KEY);
     if (!saved) return createInitialState();
-    const parsed = JSON.parse(saved);
+    const envelope = JSON.parse(saved);
+    if (envelope.format !== "AES-GCM-v1") return createInitialState();
+    const encryptionKey = key || await getEncryptionKey(cryptoApi);
+    const decrypted = await cryptoApi.subtle.decrypt(
+      { name: "AES-GCM", iv: fromBase64(envelope.iv) },
+      encryptionKey,
+      fromBase64(envelope.ciphertext)
+    );
+    const parsed = JSON.parse(new TextDecoder().decode(decrypted));
     if (!Array.isArray(parsed.employees) || !Array.isArray(parsed.marks)
       || !Array.isArray(parsed.novelties) || !Array.isArray(parsed.sites)) {
       return createInitialState();
@@ -45,9 +89,20 @@ export function loadState(storage = globalThis.localStorage) {
   }
 }
 
-export function saveState(state, storage = globalThis.localStorage) {
+export async function saveState(state, storage = globalThis.localStorage, cryptoApi = globalThis.crypto, key) {
   try {
-    storage?.setItem(STORAGE_KEY, JSON.stringify(state));
+    const encryptionKey = key || await getEncryptionKey(cryptoApi);
+    const iv = cryptoApi.getRandomValues(new Uint8Array(12));
+    const encrypted = await cryptoApi.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      encryptionKey,
+      new TextEncoder().encode(JSON.stringify(state))
+    );
+    storage?.setItem(STORAGE_KEY, JSON.stringify({
+      format: "AES-GCM-v1",
+      iv: toBase64(iv),
+      ciphertext: toBase64(encrypted)
+    }));
     return true;
   } catch {
     return false;

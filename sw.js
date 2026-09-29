@@ -1,4 +1,4 @@
-const CACHE = "control-de-acceso-shell-v1";
+const CACHE = "control-de-acceso-shell-v2";
 const ASSETS = ["./", "./index.html", "./styles.css", "./src/app.js", "./src/domain.js"];
 
 self.addEventListener("install", (event) => {

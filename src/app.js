@@ -1,6 +1,6 @@
 import { createInitialState, downloadCsv, loadState, markAttendance, saveState } from "./domain.js";
 
-const state = loadState();
+const state = await loadState();
 const content = document.querySelector("#app-content");
 const title = document.querySelector("#page-title");
 const nav = document.querySelector("#navigation");
@@ -45,8 +45,8 @@ function showToast(message, error = false) {
   toastTimeout = setTimeout(() => toast.classList.remove("visible"), 3500);
 }
 
-function persist() {
-  const saved = saveState(state);
+async function persist() {
+  const saved = await saveState(state);
   if (!saved) showToast("No se pudo guardar. Libera espacio en el dispositivo.", true);
 }
 
