@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#13382f">
+    <title>Control de acceso · Asistencia</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#dashboard" aria-label="Ir al tablero">
+          <span class="brand-mark">C</span>
+          <span><strong>control</strong><small>ACCESO & ASISTENCIA</small></span>
+        </a>
+        <div class="site-context"><span class="eyebrow">OPERACIÓN</span><strong>23 sedes</strong><span>Gestión centralizada</span></div>
+        <nav id="navigation" aria-label="Navegación principal"></nav>
+        <div class="sidebar-bottom"><span class="status-dot"></span><span>Datos guardados en este dispositivo</span></div>
+      </aside>
+      <main class="main-panel">
+        <header class="topbar">
+          <div><span class="eyebrow" id="today-label"></span><h1 id="page-title">Resumen de asistencia</h1></div>
+          <label class="role-control">Vista de acceso
+            <select id="role-select" aria-label="Vista de acceso">
+              <option>Administrador</option><option>Jefatura</option><option>Colaborador</option>
+            </select>
+          </label>
+        </header>
+        <div id="app-content" aria-live="polite"></div>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
